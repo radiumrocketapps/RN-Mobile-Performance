@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity
 } from 'react-native'
+import Board from './boardLogic'
 import Cell from './Cell'
 
 export default class Game extends Component {
@@ -13,37 +14,105 @@ export default class Game extends Component {
     super(props)
     this.state = {
       rows: '5',
-      columns: '5'
+      columns: '5',
+      gameRunning: false,
+      interval: 1000,
+      board: new Board()
     }
   }
 
   handleRowChange = text => {
-    this.setState({
-      rows: text
-    })
+    if (!this.state.gameRunning) {
+      this.setState({
+        rows: text
+      })
+    }
   }
 
   handleColumnChange = text => {
-    this.setState({
-      columns: text
-    })
+    if (!this.state.gameRunning) {
+      this.setState({
+        columns: text
+      })
+    }
   }
 
   renderBoard = () => {
-    var newBoard = []
-    var cellRow = []
-    for (var i = 0; i < this.state.rows; i++) {
-      for (var j = 0; j < this.state.columns; j++) {
-        cellRow.push(<Cell key={[i, j]} />)
+    let newBoard = []
+    let cellRow = []
+    for (let i = 0; i < this.state.rows; i++) {
+      for (let j = 0; j < this.state.columns; j++) {
+        if (this.state.board.isCellAlive(i + ' , ' + j)) {
+          cellRow.push(
+            <Cell
+              key={[i, j]}
+              position={{ x: i, y: j }}
+              live={true}
+              storeCell={this.storeCell.bind(this)}
+            />
+          )
+        } else {
+          cellRow.push(
+            <Cell
+              key={[i, j]}
+              position={{ x: i, y: j }}
+              live={false}
+              storeCell={this.storeCell.bind(this)}
+            />
+          )
+        }
       }
       newBoard.push(
-        <View style={styles.row} key={i}>
+        <View className="row" key={i}>
           {cellRow}
         </View>
       )
       cellRow = []
     }
     return newBoard
+  }
+
+  handleStart = () => {
+    if (!this.state.gameRunning) {
+      this.setState(
+        {
+          gameRunning: true
+        },
+        () => {
+          this.intervalRef = setInterval(
+            () => this.runGame(),
+            this.state.interval
+          )
+        }
+      )
+    }
+  }
+
+  handleStop = () => {
+    this.setState(
+      {
+        gameRunning: false
+      },
+      () => {
+        if (this.intervalRef) {
+          clearInterval(this.intervalRef)
+        }
+      }
+    )
+  }
+
+  runGame = () => {
+    this.setState({
+      board: this.state.board.addBoard()
+    })
+  }
+
+  storeCell = position => {
+    if (!this.state.gameRunning) {
+      this.setState({
+        board: this.state.board.storeCell(position)
+      })
+    }
   }
 
   render() {
@@ -69,13 +138,14 @@ export default class Game extends Component {
           </View>
         </View>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={this.handleStart}>
             <Text style={styles.buttonText}>Start</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={this.handleStop}>
             <Text style={styles.buttonText}>Stop</Text>
           </TouchableOpacity>
         </View>
+        <Text>Board: {this.state.board.getnumberBoard()}</Text>
         <View style={styles.board}>{this.renderBoard()}</View>
       </View>
     )
