@@ -4,7 +4,8 @@ import {
   Text,
   View,
   TextInput,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from 'react-native'
 import Board from './boardLogic'
 import Cell from './Cell'
@@ -13,29 +14,34 @@ export default class Game extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      rows: '5',
-      columns: '5',
+      rows: '100',
+      columns: '100',
       gameRunning: false,
-      interval: 1000,
+      firstRender: true,
+      density: 0.5,
+      interval: 100,
       board: new Board()
     }
+    this.liveCells = new Array()
+    this.numberOfLiveCells =
+      this.state.rows * this.state.columns * this.state.density
   }
 
-  handleRowChange = text => {
-    if (!this.state.gameRunning) {
-      this.setState({
-        rows: text
-      })
-    }
-  }
+  // handleRowChange = text => {
+  //   if (!this.state.gameRunning) {
+  //     this.setState({
+  //       rows: text
+  //     })
+  //   }
+  // }
 
-  handleColumnChange = text => {
-    if (!this.state.gameRunning) {
-      this.setState({
-        columns: text
-      })
-    }
-  }
+  // handleColumnChange = text => {
+  //   if (!this.state.gameRunning) {
+  //     this.setState({
+  //       columns: text
+  //     })
+  //   }
+  // }
 
   renderBoard = () => {
     let newBoard = []
@@ -56,7 +62,7 @@ export default class Game extends Component {
             <Cell
               key={[i, j]}
               position={{ x: i, y: j }}
-              live={false}
+              live={this.state.firstRender && this.aleatoryMapping(i, j)}
               storeCell={this.storeCell.bind(this)}
             />
           )
@@ -72,11 +78,21 @@ export default class Game extends Component {
     return newBoard
   }
 
+  aleatoryMapping = (x, y) => {
+    const random_boolean = Math.random() < this.state.density
+    if (random_boolean && this.liveCells.length < this.numberOfLiveCells) {
+      this.liveCells.push({ x, y })
+      return true
+    }
+    return false
+  }
+
   handleStart = () => {
     if (!this.state.gameRunning) {
       this.setState(
         {
-          gameRunning: true
+          gameRunning: true,
+          firstRender: false
         },
         () => {
           this.intervalRef = setInterval(
@@ -88,18 +104,18 @@ export default class Game extends Component {
     }
   }
 
-  handleStop = () => {
-    this.setState(
-      {
-        gameRunning: false
-      },
-      () => {
-        if (this.intervalRef) {
-          clearInterval(this.intervalRef)
-        }
-      }
-    )
-  }
+  // handleStop = () => {
+  //   this.setState(
+  //     {
+  //       gameRunning: false
+  //     },
+  //     () => {
+  //       if (this.intervalRef) {
+  //         clearInterval(this.intervalRef)
+  //       }
+  //     }
+  //   )
+  // }
 
   runGame = () => {
     this.setState({
@@ -115,10 +131,17 @@ export default class Game extends Component {
     }
   }
 
+  componentDidMount() {
+    this.liveCells.map(cell => {
+      this.storeCell(cell)
+		})
+		this.handleStart();
+  }
+
   render() {
     return (
       <View>
-        <View style={styles.inputContainer}>
+        {/* <View style={styles.inputContainer}>
           <View style={styles.labelContainer}>
             <Text style={styles.label}>Rows</Text>
             <TextInput
@@ -144,9 +167,13 @@ export default class Game extends Component {
           <TouchableOpacity style={styles.button} onPress={this.handleStop}>
             <Text style={styles.buttonText}>Stop</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
         <Text>Board: {this.state.board.getnumberBoard()}</Text>
-        <View style={styles.board}>{this.renderBoard()}</View>
+        <ScrollView>
+          <ScrollView horizontal={true} style={styles.board}>
+            {this.renderBoard()}
+          </ScrollView>
+        </ScrollView>
       </View>
     )
   }
@@ -194,12 +221,7 @@ const styles = StyleSheet.create({
   board: {
     flex: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
     paddingTop: 20,
-    paddingBottom: 20,
-    margin: 20,
-    borderColor: 'black',
-    borderStyle: 'dotted',
-    borderWidth: 2
+    paddingBottom: 20
   }
 })
